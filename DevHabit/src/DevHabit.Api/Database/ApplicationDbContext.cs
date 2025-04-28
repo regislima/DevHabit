@@ -5,7 +5,7 @@ namespace DevHabit.Api.Database;
 
 public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
-    private DbSet<Habit> Habits { get; set; }
+    public DbSet<Habit> Habits { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
