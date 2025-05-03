@@ -2,7 +2,7 @@
 
 namespace DevHabit.Api.DTOs.Habits;
 
-public static class HabitMappings
+internal static class HabitMappings
 {
     public static Habit ToEntity(this CreateHabitDto dto) =>
         new()
