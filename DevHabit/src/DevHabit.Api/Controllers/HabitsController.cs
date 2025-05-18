@@ -2,6 +2,7 @@
 using System.Linq.Expressions;
 using DevHabit.Api.Database;
 using DevHabit.Api.Database.SortMapping;
+using DevHabit.Api.DTOs.Common;
 using DevHabit.Api.DTOs.Habits;
 using DevHabit.Api.DTOs.Tags;
 using DevHabit.Api.Entities;
@@ -20,7 +21,7 @@ namespace DevHabit.Api.Controllers;
 public sealed class HabitsController(ApplicationDbContext dbContext) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<HabitsCollectionDto>> GetHabits(
+    public async Task<ActionResult<PaginationResult<HabitDto>>> GetHabits(
         [FromQuery] HabitsQueryParameters query,
         SortMappingProvider sortMappingProvider)
     {
@@ -31,18 +32,17 @@ public sealed class HabitsController(ApplicationDbContext dbContext) : Controlle
 
         query.Search ??= query.Search?.Trim().ToLower();
         var sortMappings = sortMappingProvider.GetMappings<HabitDto, Habit>();
-        var habits = await dbContext
+        var habitsQuery = dbContext
             .Habits
             .Where(h => query.Search == null ||
                    h.Name.Contains(query.Search) ||
                    h.Description != null && h.Description.Contains(query.Search))
             .Where(h => query.Type == null || h.Type == query.Type)
-            .ApplySort(query.Sort, sortMappings)
             .Where(h => query.Status == null || h.Status == query.Status)
-            .Select(h => h.ToDto())
-            .ToListAsync();
+            .ApplySort(query.Sort, sortMappings)
+            .Select(h => h.ToDto());
         
-        return Ok(new HabitsCollectionDto(habits));
+        return Ok(await PaginationResult<HabitDto>.CreateAsync(habitsQuery, query.Page, query.PageSize));
     }
 
     [HttpGet("{id}")]

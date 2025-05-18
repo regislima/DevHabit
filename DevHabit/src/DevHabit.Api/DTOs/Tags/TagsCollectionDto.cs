@@ -1,6 +1,9 @@
-﻿namespace DevHabit.Api.DTOs.Tags;
+﻿using DevHabit.Api.DTOs.Common;
+using DevHabit.Api.DTOs.Habits;
 
-public sealed record TagsCollectionDto
+namespace DevHabit.Api.DTOs.Tags;
+
+public sealed record TagsCollectionDto : ICollectionResponse<TagDto>
 {
-    public List<TagDto> Data { get; set; }
+    public List<TagDto> Items { get; init; }
 }
