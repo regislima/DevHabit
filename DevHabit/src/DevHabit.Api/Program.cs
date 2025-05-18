@@ -4,9 +4,11 @@ using DevHabit.Api.DTOs.Habits;
 using DevHabit.Api.Entities;
 using DevHabit.Api.Extensions;
 using DevHabit.Api.Middlewares;
+using DevHabit.Api.Tools;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Newtonsoft.Json.Serialization;
 using Npgsql;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
@@ -18,7 +20,8 @@ builder.Services.AddControllers(options =>
 {
     options.ReturnHttpNotAcceptable = true;
 })
-.AddNewtonsoftJson()
+.AddNewtonsoftJson(options => options.SerializerSettings.ContractResolver = 
+    new CamelCasePropertyNamesContractResolver())
 .AddXmlSerializerFormatters();
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
@@ -62,6 +65,7 @@ builder.Logging.AddOpenTelemetry(options =>
 builder.Services.AddTransient<SortMappingProvider>();
 builder.Services.AddSingleton<ISortMapptingDefinition, SortMappingDefinition<HabitDto, Habit>>(_ =>
     HabitMappings.SortMapping);
+builder.Services.AddTransient<DataShapingTool>();
 
 var app = builder.Build();
 
