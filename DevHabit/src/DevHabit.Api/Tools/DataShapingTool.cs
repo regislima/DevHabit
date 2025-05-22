@@ -2,6 +2,7 @@
 using System.Dynamic;
 using System.Linq.Dynamic.Core;
 using System.Reflection;
+using DevHabit.Api.DTOs.Common;
 
 namespace DevHabit.Api.Tools;
 
@@ -20,7 +21,10 @@ public sealed class DataShapingTool
         return (ExpandoObject)shapedObject;
     }
 
-    public List<ExpandoObject> ShapeCollectionData<T>(IEnumerable<T> entities, string? fields)
+    public List<ExpandoObject> ShapeCollectionData<T>(
+        IEnumerable<T> entities,
+        string? fields,
+        Func<T, List<LinkDto>>? linksFactory = null)
     {
         var shapedObjects = new List<ExpandoObject>();
         var propertyInfos = GetPropertyInfos<T>(fields);
@@ -31,6 +35,9 @@ public sealed class DataShapingTool
 
             foreach (var propertyinfo in propertyInfos)
                 shapedObject[propertyinfo.Name] = propertyinfo.GetValue(entity);
+
+            if (linksFactory is not null)
+                shapedObject["Links"] = linksFactory(entity);
 
             shapedObjects.Add((ExpandoObject)shapedObject);
         }
