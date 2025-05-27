@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Dynamic;
 using System.Linq.Expressions;
+using Asp.Versioning;
 using DevHabit.Api.Database;
 using DevHabit.Api.Database.SortMapping;
 using DevHabit.Api.DTOs.Common;
@@ -22,6 +23,7 @@ namespace DevHabit.Api.Controllers;
 
 [ApiController]
 [Route("habits")]
+[ApiVersion(1.0)]
 public sealed class HabitsController(ApplicationDbContext dbContext, LinkTools linkTools) : ControllerBase
 {
     [HttpGet]
@@ -58,28 +60,33 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkTools l
             .Take(query.PageSize)
             .ToListAsync();
 
+        bool includeLinks = query.Accept == CustomMediaTypeNames.Application.HateoasJson;
         var paginationResult = new PaginationResult<ExpandoObject>
         {
             Items = dataShapingTool.ShapeCollectionData(
                 habits,
                 query.Fields,
-                h => CreateLinkForHabit(h.Id, query.Fields)),
+                includeLinks ? h => CreateLinkForHabit(h.Id, query.Fields) : null),
             Page = query.Page,
             PageSize = query.PageSize,
             TotalCount = totalCount
         };
-        paginationResult.Links = CreateLinksForHabits(
-            query,
-            paginationResult.HasNextPage,
-            paginationResult.HasPreviousPage);
+
+        if (includeLinks)
+            paginationResult.Links = CreateLinksForHabits(
+                query,
+                paginationResult.HasNextPage,
+                paginationResult.HasPreviousPage);
 
         return Ok(paginationResult);
     }
 
     [HttpGet("{id}")]
+    [MapToApiVersion(1.0)]
     public async Task<IActionResult> GetHabit(
         string id,
         string? fields,
+        [FromQuery(Name = "Accept")] string? accept,
         DataShapingTool dataShapingTool)
     {
         if (!dataShapingTool.Validate<HabitWithTagsDto>(fields))
@@ -90,16 +97,52 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkTools l
         var habit = await dbContext
             .Habits
             .Where(h => h.Id == id)
-            .Select(h => h.ToDto())
+            .Select(h => h.ToDtoWithTags())
             .FirstOrDefaultAsync();
 
         if (habit is null)
             return NotFound();
 
         var shapedHabitDto = dataShapingTool.ShapeData(habit, fields);
-        var linksDto = CreateLinkForHabit(id, fields);
 
-        shapedHabitDto.TryAdd("links", linksDto);
+        if (accept == CustomMediaTypeNames.Application.HateoasJson)
+        {
+            var linksDto = CreateLinkForHabit(id, fields);
+            shapedHabitDto.TryAdd("links", linksDto);
+        }
+
+        return Ok(shapedHabitDto);
+    }
+
+    [HttpGet("{id}")]
+    [ApiVersion(2.0)]
+    public async Task<IActionResult> GetHabitV2(
+        string id,
+        string? fields,
+        [FromQuery(Name = "Accept")] string? accept,
+        DataShapingTool dataShapingTool)
+    {
+        if (!dataShapingTool.Validate<HabitWithTagsDtoV2>(fields))
+            return Problem(
+                detail: $"Invalid data shaping fields. '{fields}'.",
+                statusCode: StatusCodes.Status400BadRequest);
+
+        var habit = await dbContext
+            .Habits
+            .Where(h => h.Id == id)
+            .Select(h => h.ToDtoWithTagsV2())
+            .FirstOrDefaultAsync();
+
+        if (habit is null)
+            return NotFound();
+
+        var shapedHabitDto = dataShapingTool.ShapeData(habit, fields);
+
+        if (accept == CustomMediaTypeNames.Application.HateoasJson)
+        {
+            var linksDto = CreateLinkForHabit(id, fields);
+            shapedHabitDto.TryAdd("links", linksDto);
+        }
 
         return Ok(shapedHabitDto);
     }
