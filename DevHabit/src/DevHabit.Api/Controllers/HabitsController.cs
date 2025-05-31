@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Dynamic;
 using System.Linq.Expressions;
+using System.Net.Mime;
 using Asp.Versioning;
 using DevHabit.Api.Database;
 using DevHabit.Api.Database.SortMapping;
@@ -24,6 +25,13 @@ namespace DevHabit.Api.Controllers;
 [ApiController]
 [Route("habits")]
 [ApiVersion(1.0)]
+[Produces(
+    MediaTypeNames.Application.Json,
+    CustomMediaTypeNames.Application.JsonV1,
+    CustomMediaTypeNames.Application.JsonV2,
+    CustomMediaTypeNames.Application.HateoasJson,
+    CustomMediaTypeNames.Application.HateoasJsonV1,
+    CustomMediaTypeNames.Application.HateoasJsonV2)]
 public sealed class HabitsController(ApplicationDbContext dbContext, LinkTools linkTools) : ControllerBase
 {
     [HttpGet]
@@ -60,19 +68,18 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkTools l
             .Take(query.PageSize)
             .ToListAsync();
 
-        bool includeLinks = query.Accept == CustomMediaTypeNames.Application.HateoasJson;
         var paginationResult = new PaginationResult<ExpandoObject>
         {
             Items = dataShapingTool.ShapeCollectionData(
                 habits,
                 query.Fields,
-                includeLinks ? h => CreateLinkForHabit(h.Id, query.Fields) : null),
+                query.IncludeLinks ? h => CreateLinkForHabit(h.Id, query.Fields) : null),
             Page = query.Page,
             PageSize = query.PageSize,
             TotalCount = totalCount
         };
 
-        if (includeLinks)
+        if (query.IncludeLinks)
             paginationResult.Links = CreateLinksForHabits(
                 query,
                 paginationResult.HasNextPage,
@@ -86,12 +93,12 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkTools l
     public async Task<IActionResult> GetHabit(
         string id,
         string? fields,
-        [FromQuery(Name = "Accept")] string? accept,
+        [FromQuery] HabitQueryParameters query,
         DataShapingTool dataShapingTool)
     {
-        if (!dataShapingTool.Validate<HabitWithTagsDto>(fields))
+        if (!dataShapingTool.Validate<HabitWithTagsDto>(query.Fields))
             return Problem(
-                detail: $"Invalid data shaping fields. '{fields}'.",
+                detail: $"Invalid data shaping fields. '{query.Fields}'.",
                 statusCode: StatusCodes.Status400BadRequest);
 
         var habit = await dbContext
@@ -103,11 +110,11 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkTools l
         if (habit is null)
             return NotFound();
 
-        var shapedHabitDto = dataShapingTool.ShapeData(habit, fields);
+        var shapedHabitDto = dataShapingTool.ShapeData(habit, query.Fields);
 
-        if (accept == CustomMediaTypeNames.Application.HateoasJson)
+        if (query.IncludeLinks)
         {
-            var linksDto = CreateLinkForHabit(id, fields);
+            var linksDto = CreateLinkForHabit(id, query.Fields);
             shapedHabitDto.TryAdd("links", linksDto);
         }
 
@@ -118,13 +125,12 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkTools l
     [ApiVersion(2.0)]
     public async Task<IActionResult> GetHabitV2(
         string id,
-        string? fields,
-        [FromQuery(Name = "Accept")] string? accept,
+        [FromQuery] HabitQueryParameters query,
         DataShapingTool dataShapingTool)
     {
-        if (!dataShapingTool.Validate<HabitWithTagsDtoV2>(fields))
+        if (!dataShapingTool.Validate<HabitWithTagsDtoV2>(query.Fields))
             return Problem(
-                detail: $"Invalid data shaping fields. '{fields}'.",
+                detail: $"Invalid data shaping fields. '{query.Fields}'.",
                 statusCode: StatusCodes.Status400BadRequest);
 
         var habit = await dbContext
@@ -136,11 +142,11 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkTools l
         if (habit is null)
             return NotFound();
 
-        var shapedHabitDto = dataShapingTool.ShapeData(habit, fields);
+        var shapedHabitDto = dataShapingTool.ShapeData(habit, query.Fields);
 
-        if (accept == CustomMediaTypeNames.Application.HateoasJson)
+        if (query.IncludeLinks)
         {
-            var linksDto = CreateLinkForHabit(id, fields);
+            var linksDto = CreateLinkForHabit(id, query.Fields);
             shapedHabitDto.TryAdd("links", linksDto);
         }
 

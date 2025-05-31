@@ -1,6 +1,9 @@
-﻿using DevHabit.Api.Database;
+﻿using System.Net.Mime;
+using DevHabit.Api.Database;
+using DevHabit.Api.DTOs.Common;
 using DevHabit.Api.DTOs.Tags;
 using DevHabit.Api.Entities;
+using DevHabit.Api.Tools;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -10,10 +13,17 @@ namespace DevHabit.Api.Controllers;
 
 [ApiController]
 [Route("tags")]
-public sealed class TagsController(ApplicationDbContext dbContext) : ControllerBase
+[Produces(
+    MediaTypeNames.Application.Json,
+    CustomMediaTypeNames.Application.JsonV1,
+    CustomMediaTypeNames.Application.HateoasJson,
+    CustomMediaTypeNames.Application.HateoasJsonV1)]
+public sealed class TagsController(
+    ApplicationDbContext dbContext,
+    LinkTools linkTools) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<TagsCollectionDto>> GetTags()
+    public async Task<ActionResult<TagsCollectionDto>> GetTags([FromHeader] AcceptHeaderDto acceptHeader)
     {
         var tags = await dbContext
             .Tags
@@ -25,11 +35,14 @@ public sealed class TagsController(ApplicationDbContext dbContext) : ControllerB
             Items = tags
         };
 
+        if (acceptHeader.IncludeLinks)
+            habitsCollectionDto.Links = CreateLinksForTags();
+
         return Ok(habitsCollectionDto);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<TagDto>> GetTag(string id)
+    public async Task<ActionResult<TagDto>> GetTag(string id, [FromHeader] AcceptHeaderDto acceptHeader)
     {
         var tag = await dbContext
             .Tags
@@ -39,6 +52,9 @@ public sealed class TagsController(ApplicationDbContext dbContext) : ControllerB
 
         if (tag is null)
             return NotFound();
+
+        if (acceptHeader.IncludeLinks)
+            tag.Links = CreateLinksForTag(id);
 
         return Ok(tag);
     }
@@ -102,5 +118,28 @@ public sealed class TagsController(ApplicationDbContext dbContext) : ControllerB
         await dbContext.SaveChangesAsync();
 
         return NoContent();
+    }
+
+    private List<LinkDto> CreateLinksForTags()
+    {
+        List<LinkDto> links =
+        [
+            linkTools.Create(nameof(GetTags), "self", HttpMethods.Get),
+            linkTools.Create(nameof(CreateTag), "create", HttpMethods.Post)
+        ];
+
+        return links;
+    }
+
+    private List<LinkDto> CreateLinksForTag(string id)
+    {
+        List<LinkDto> links =
+        [
+            linkTools.Create(nameof(GetTag), "self", HttpMethods.Get, new { id }),
+            linkTools.Create(nameof(UpdateTag), "update", HttpMethods.Put, new { id }),
+            linkTools.Create(nameof(DeleteTag), "delete", HttpMethods.Delete, new { id })
+        ];
+
+        return links;
     }
 }
