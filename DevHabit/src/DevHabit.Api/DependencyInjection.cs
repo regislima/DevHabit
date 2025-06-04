@@ -6,6 +6,7 @@ using DevHabit.Api.Entities;
 using DevHabit.Api.Middlewares;
 using DevHabit.Api.Tools;
 using FluentValidation;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -90,6 +91,15 @@ public static class DependencyInjection
             });
         });
 
+        builder.Services.AddDbContext<ApplicationIdentityDbContext>(options =>
+        {
+            options.UseNpgsql(builder.Configuration.GetConnectionString("Database"),
+            npgsqlOptions =>
+            {
+                npgsqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Identity);
+            });
+        });
+
         return builder;
     }
 
@@ -125,6 +135,15 @@ public static class DependencyInjection
         builder.Services.AddTransient<DataShapingTool>();
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddTransient<LinkTools>();
+        
+        return builder;
+    }
+
+    public static WebApplicationBuilder AddAuthenticationServices(this WebApplicationBuilder builder)
+    {
+        builder.Services
+            .AddIdentity<IdentityUser, IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationIdentityDbContext>();
         
         return builder;
     }
