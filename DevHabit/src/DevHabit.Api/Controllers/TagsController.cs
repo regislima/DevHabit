@@ -5,6 +5,7 @@ using DevHabit.Api.DTOs.Tags;
 using DevHabit.Api.Entities;
 using DevHabit.Api.Tools;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ namespace DevHabit.Api.Controllers;
 
 [ApiController]
 [Route("tags")]
+[Authorize]
 [Produces(
     MediaTypeNames.Application.Json,
     CustomMediaTypeNames.Application.JsonV1,

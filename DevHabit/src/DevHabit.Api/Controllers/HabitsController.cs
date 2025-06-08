@@ -12,6 +12,7 @@ using DevHabit.Api.Entities;
 using DevHabit.Api.Extensions;
 using DevHabit.Api.Tools;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +25,7 @@ namespace DevHabit.Api.Controllers;
 
 [ApiController]
 [Route("habits")]
+[Authorize]
 [ApiVersion(1.0)]
 [Produces(
     MediaTypeNames.Application.Json,

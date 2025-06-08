@@ -1,6 +1,7 @@
 ﻿using DevHabit.Api.Database;
 using DevHabit.Api.DTOs.Auth;
 using DevHabit.Api.DTOs.Users;
+using DevHabit.Api.Tools;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +16,8 @@ namespace DevHabit.Api.Controllers;
 public sealed class AuthController(
     UserManager<IdentityUser> userManager,
     ApplicationIdentityDbContext identityDbContext,
-    ApplicationDbContext applicationDbContext) : ControllerBase
+    ApplicationDbContext applicationDbContext,
+    TokenProvider tokenProvider) : ControllerBase
 {
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterUserDto registerUserDto)
@@ -54,6 +56,23 @@ public sealed class AuthController(
         await applicationDbContext.SaveChangesAsync();
         await transaction.CommitAsync();
 
-        return Ok(user.Id);
+        var tokenRequest = new TokenRequest(identityUser.Id, identityUser.Email);
+        var accessTokenDto = tokenProvider.Create(tokenRequest);
+
+        return Ok(accessTokenDto);
+    }
+
+    [HttpPost("login")]
+    public async Task<ActionResult<AccessTokenDto>> Login(LoginUserDto loginUserDto)
+    {
+        var identityUser = await userManager.FindByEmailAsync(loginUserDto.Email);
+
+        if (identityUser is null || !await userManager.CheckPasswordAsync(identityUser, loginUserDto.Password))
+            return Unauthorized();
+
+        var tokenRequest = new TokenRequest(identityUser.Id, identityUser.Email!);
+        var accessTokenDto = tokenProvider.Create(tokenRequest);
+
+        return Ok(accessTokenDto);
     }
 }
