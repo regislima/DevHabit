@@ -120,7 +120,7 @@ internal static class HabitMappings
             CreatedAtUtc = habit.CreatedAtUtc,
             UpdatedAtUtc = habit.UpdatedAtUtc,
             LastCompletedAtUtc = habit.LastCompletedAtUtc,
-            Tags = habit.Tags.Select(t => t.Name).ToArray()
+            Tags = []
         };
 
     public static HabitWithTagsDtoV2 ToDtoWithTagsV2(this Habit habit) =>
