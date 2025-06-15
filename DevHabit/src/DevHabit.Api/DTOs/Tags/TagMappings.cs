@@ -14,10 +14,11 @@ internal static class TagMappings
             UpdatedAtUtc = tag.UpdatedAtUtc
         };
 
-    public static Tag ToEntity(this CreateTagDto dto) =>
+    public static Tag ToEntity(this CreateTagDto dto, string userId) =>
         new()
         {
             Id = $"t_{Guid.CreateVersion7()}",
+            UserId = userId,
             Name = dto.Name,
             Description = dto.Description,
             CreatedAtUtc = DateTime.UtcNow
