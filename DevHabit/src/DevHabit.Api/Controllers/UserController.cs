@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using DevHabit.Api.Database;
 using DevHabit.Api.DTOs.Users;
+using DevHabit.Api.Entities;
 using DevHabit.Api.Tools;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DevHabit.Api.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Roles = Roles.Member)]
 [Route("users")]
 public sealed class UserController(
     ApplicationDbContext dbContext,

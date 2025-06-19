@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DevHabit.Api.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Roles = Roles.Member)]
 [Route("tags")]
 [Produces(
     MediaTypeNames.Application.Json,
