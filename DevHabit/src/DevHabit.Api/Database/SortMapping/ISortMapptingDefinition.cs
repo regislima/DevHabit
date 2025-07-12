@@ -1,3 +1,3 @@
 ﻿namespace DevHabit.Api.Database.SortMapping;
 
-public interface ISortMapptingDefinition;
+public interface ISortMappingDefinition;

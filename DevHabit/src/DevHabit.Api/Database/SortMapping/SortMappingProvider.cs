@@ -1,6 +1,6 @@
 ﻿namespace DevHabit.Api.Database.SortMapping;
 
-public sealed class SortMappingProvider(IEnumerable<ISortMapptingDefinition> sortMapptingDefinitions)
+public sealed class SortMappingProvider(IEnumerable<ISortMappingDefinition> sortMapptingDefinitions)
 {
     public SortMapping[] GetMappings<TSource, TDestination>()
     {
