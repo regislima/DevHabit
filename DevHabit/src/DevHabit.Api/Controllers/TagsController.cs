@@ -44,7 +44,7 @@ public sealed class TagsController(
         };
 
         if (acceptHeader.IncludeLinks)
-            habitsCollectionDto.Links = CreateLinksForTags();
+            habitsCollectionDto.Links = CreateLinksForTags(tags.Count);
 
         return Ok(habitsCollectionDto);
     }
@@ -147,13 +147,15 @@ public sealed class TagsController(
         return NoContent();
     }
 
-    private List<LinkDto> CreateLinksForTags()
+    private List<LinkDto> CreateLinksForTags(int tagsCount)
     {
         List<LinkDto> links =
         [
             linkTools.Create(nameof(GetTags), "self", HttpMethods.Get),
-            linkTools.Create(nameof(CreateTag), "create", HttpMethods.Post)
         ];
+
+        if (tagsCount < 5)
+            links.Add(linkTools.Create(nameof(CreateTag), "create", HttpMethods.Post));
 
         return links;
     }
