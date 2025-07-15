@@ -3,6 +3,7 @@ using DevHabit.Api.Database;
 using DevHabit.Api.DTOs.Common;
 using DevHabit.Api.DTOs.Tags;
 using DevHabit.Api.Entities;
+using DevHabit.Api.Services;
 using DevHabit.Api.Tools;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
@@ -109,7 +110,10 @@ public sealed class TagsController(
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult> UpdateTag(string id, UpdateTagDto updateTagDto)
+    public async Task<ActionResult> UpdateTag(
+        string id,
+        UpdateTagDto updateTagDto,
+        InMemoryETagStore eTagStore)
     {
         var userId = await userContext.GetUserIdAsync();
 
@@ -124,6 +128,7 @@ public sealed class TagsController(
         tag.UpdateFromDto(updateTagDto);
         dbContext.Tags.Update(tag);
         await dbContext.SaveChangesAsync();
+        eTagStore.SetETag(Request.Path.Value!, tag.ToDto());
 
         return NoContent();
     }
