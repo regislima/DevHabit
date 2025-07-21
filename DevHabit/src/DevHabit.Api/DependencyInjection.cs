@@ -173,7 +173,7 @@ public static class DependencyInjection
                 {
                     MaxRetryAttempts = 3,
                     Delay = TimeSpan.FromMilliseconds(500),
-                    BackoffType = BackoffType.Exponential,
+                    BackoffType = DelayBackoffType.Exponential,
                     UseJitter = true
                 });
 
