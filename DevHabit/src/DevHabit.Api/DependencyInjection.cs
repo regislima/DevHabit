@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Serialization;
 using Npgsql;
@@ -26,6 +27,8 @@ using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Polly;
+using Polly.Telemetry;
 using Quartz;
 using CorsOptions = DevHabit.Api.Settings.CorsOptions;
 
@@ -162,7 +165,29 @@ public static class DependencyInjection
                     .UserAgent.Add(new ProductInfoHeaderValue("DevHabit", "1.0"));
                 client.DefaultRequestHeaders
                     .Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+            })
+            .AddResilienceHandler("custom", pipeline =>
+            {
+                pipeline.AddTimeout(TimeSpan.FromSeconds(5));
+                pipeline.AddRetry(new HttpRetryStrategyOptions
+                {
+                    MaxRetryAttempts = 3,
+                    Delay = TimeSpan.FromMilliseconds(500),
+                    BackoffType = BackoffType.Exponential,
+                    UseJitter = true
+                });
+
+                pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+                {
+                    SamplingDuration = TimeSpan.FromSeconds(10),
+                    FailureRatio = 0.9,
+                    MinimumThroughput = 5,
+                    BreakDuration = TimeSpan.FromSeconds(5)
+                });
+
+                pipeline.AddTimeout(TimeSpan.FromSeconds(1));
             });
+        
         builder.Services.Configure<EncryptionOptions>(builder.Configuration.GetSection("Encryption"));
         builder.Services.AddTransient<EncryptionService>();
         builder.Services.AddSingleton<InMemoryETagStore>();
