@@ -31,5 +31,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.UseMiddleware<ETagMiddleware>();
+app.UseMiddleware<UserContextEnrichmentMiddleware>();
 app.MapControllers();
 await app.RunAsync();
