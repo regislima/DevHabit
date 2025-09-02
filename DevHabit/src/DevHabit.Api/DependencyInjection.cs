@@ -76,7 +76,10 @@ public static class DependencyInjection
         })
         .AddMvc();
 
-        builder.Services.AddOpenApi();
+        builder.Services.AddSwaggerGen(options =>
+        {
+            options.ResolveConflictingActions(descriptions => descriptions.First());
+        });
 
         return builder;
     }
